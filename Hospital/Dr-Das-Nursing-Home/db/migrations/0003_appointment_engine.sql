@@ -4,7 +4,7 @@ ALTER TABLE hospitals
   ADD CONSTRAINT ck_hospital_cutoff CHECK (booking_cutoff_minutes <= 10080);
 
 ALTER TABLE appointment_sessions
-  DROP CHECK ck_sessions_capacity,
+  DROP CONSTRAINT ck_sessions_capacity,
   ADD COLUMN overbook_count SMALLINT UNSIGNED NOT NULL DEFAULT 0,
   ADD CONSTRAINT ck_sessions_capacity CHECK
     (capacity > 0 AND reserved_count <= capacity + overbook_count
