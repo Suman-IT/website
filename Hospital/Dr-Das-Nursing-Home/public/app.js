@@ -33,7 +33,7 @@ async function getJson(url, options) {
 function renderDoctors() {
   const list = $("#doctor-list");
   list.innerHTML = state.doctors.length
-    ? state.doctors.map((doctor) => `<article class="doctor-card"><div><p>Specialist</p><h3>${doctor.displayName}</h3></div><button type="button" data-doctor="${doctor.id}">Book with this doctor <span aria-hidden="true">&#8594;</span></button></article>`).join("")
+    ? state.doctors.map((doctor) => `<article class="doctor-card"><div><p>${escapeHtml(doctor.specialty || "Specialist")}</p><h3>${escapeHtml(doctor.displayName)}</h3>${doctor.qualifications ? `<small class="doctor-qualifications">${escapeHtml(doctor.qualifications)}</small>` : ""}</div><button type="button" data-doctor="${doctor.id}">Book with this doctor <span aria-hidden="true">&#8594;</span></button></article>`).join("")
     : '<p class="empty-state">Doctor profiles are being updated. Please check back soon or contact the hospital.</p>';
   list.querySelectorAll("[data-doctor]").forEach((button) => button.addEventListener("click", () => { doctorSelect.value = button.dataset.doctor; $("#book").scrollIntoView({ behavior: "smooth" }); dateInput.focus(); }));
   doctorSelect.insertAdjacentHTML("beforeend", state.doctors.map((doctor) => `<option value="${doctor.id}" data-slug="${doctor.slug}">${doctor.displayName}</option>`).join(""));

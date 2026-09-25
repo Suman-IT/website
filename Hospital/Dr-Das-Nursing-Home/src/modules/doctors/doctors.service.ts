@@ -6,12 +6,16 @@ import { recordAudit } from "../../security/security.service.js";
 export interface DoctorInput {
   displayName: string;
   slug: string;
+  specialty: string | null;
+  qualifications: string | null;
   isActive: boolean;
   isPublished: boolean;
 }
 
 function view(row: RowDataPacket, departmentIds: string[] = []) {
   return { id: String(row.id), displayName: String(row.display_name), slug: String(row.slug),
+    specialty: row.specialty == null ? null : String(row.specialty),
+    qualifications: row.qualifications == null ? null : String(row.qualifications),
     isActive: Boolean(row.is_active), isPublished: Boolean(row.is_published), departmentIds };
 }
 
@@ -42,7 +46,7 @@ export class DoctorService {
 
   async listPublic(hospitalId: string) {
     const [rows] = await this.pool.execute<RowDataPacket[]>(
-      `SELECT id, display_name, slug FROM doctors
+      `SELECT id, display_name, slug, specialty, qualifications FROM doctors
        WHERE hospital_id = ? AND is_active = TRUE AND is_published = TRUE
        ORDER BY display_name, slug`,
       [hospitalId],
@@ -61,12 +65,14 @@ export class DoctorService {
       slugs.set(id, values);
     }
     return rows.map((row) => ({ id: String(row.id), displayName: String(row.display_name), slug: String(row.slug),
+      specialty: row.specialty == null ? null : String(row.specialty),
+      qualifications: row.qualifications == null ? null : String(row.qualifications),
       departmentSlugs: slugs.get(String(row.id)) ?? [] }));
   }
 
   async list(hospitalId: string) {
     const [rows] = await this.pool.execute<RowDataPacket[]>(
-      `SELECT id, display_name, slug, is_active, is_published FROM doctors
+      `SELECT id, display_name, slug, specialty, qualifications, is_active, is_published FROM doctors
        WHERE hospital_id = ?
        ORDER BY display_name, id`,
       [hospitalId],
@@ -92,9 +98,10 @@ export class DoctorService {
     try {
       await connection.beginTransaction();
       const [result] = await connection.execute<ResultSetHeader>(
-        `INSERT INTO doctors (hospital_id, display_name, slug, is_active, is_published)
-         VALUES (?, ?, ?, ?, ?)`,
-        [principal.hospitalId, input.displayName, input.slug, input.isActive, input.isPublished],
+        `INSERT INTO doctors (hospital_id, display_name, slug, specialty, qualifications, is_active, is_published)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [principal.hospitalId, input.displayName, input.slug, input.specialty, input.qualifications,
+          input.isActive, input.isPublished],
       );
       const id = String(result.insertId);
       await replaceDepartments(connection, principal.hospitalId, id, departmentIds);
@@ -119,9 +126,11 @@ export class DoctorService {
       );
       if (!rows[0]) throw new HttpError(404, "Doctor not found");
       const fields: string[] = [];
-      const values: Array<string | boolean> = [];
+      const values: Array<string | boolean | null> = [];
       if (patch.displayName !== undefined) { fields.push("display_name = ?"); values.push(patch.displayName); }
       if (patch.slug !== undefined) { fields.push("slug = ?"); values.push(patch.slug); }
+      if (patch.specialty !== undefined) { fields.push("specialty = ?"); values.push(patch.specialty); }
+      if (patch.qualifications !== undefined) { fields.push("qualifications = ?"); values.push(patch.qualifications); }
       if (patch.isActive !== undefined) { fields.push("is_active = ?"); values.push(patch.isActive); }
       if (patch.isPublished !== undefined) { fields.push("is_published = ?"); values.push(patch.isPublished); }
       if (!fields.length) throw new HttpError(400, "No changes supplied");
@@ -132,7 +141,7 @@ export class DoctorService {
       await recordAudit(connection, { hospitalId: principal.hospitalId, actorUserId: principal.userId,
         actionCode: "doctor.update", entityType: "doctor", entityId: id });
       const [updated] = await connection.execute<RowDataPacket[]>(
-        "SELECT id, display_name, slug, is_active, is_published FROM doctors WHERE hospital_id = ? AND id = ?",
+        "SELECT id, display_name, slug, specialty, qualifications, is_active, is_published FROM doctors WHERE hospital_id = ? AND id = ?",
         [principal.hospitalId, id],
       );
       await connection.commit();

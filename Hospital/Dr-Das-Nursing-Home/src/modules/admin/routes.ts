@@ -24,7 +24,7 @@ function departmentFields(raw: unknown, create: boolean): Partial<DepartmentInpu
 
 function doctorFields(raw: unknown, create: boolean) {
   const body = bodyObject(raw,
-    ["displayName", "slug", "isActive", "isPublished", ...(create ? ["departmentIds"] : [])],
+    ["displayName", "slug", "specialty", "qualifications", "isActive", "isPublished", ...(create ? ["departmentIds"] : [])],
     create ? ["displayName", "slug"] : []);
   const fields: Partial<DoctorInput> = {
     ...(body.displayName !== undefined ? { displayName: textField(body.displayName, "displayName") } : {}),
@@ -84,6 +84,10 @@ function diagnosticFields(raw: unknown, create: boolean): Partial<DiagnosticInpu
   return {
     ...(body.name !== undefined ? { name: textField(body.name, "name", 180) } : {}),
     ...(body.slug !== undefined ? { slug: slugField(body.slug) } : {}),
+    ...(body.specialty !== undefined ? { specialty: optionalField(body.specialty, (value) => textField(value, "specialty", 150)) } :
+      create ? { specialty: null } : {}),
+    ...(body.qualifications !== undefined ? { qualifications: optionalField(body.qualifications, (value) => textField(value, "qualifications", 255)) } :
+      create ? { qualifications: null } : {}),
     ...(body.category !== undefined ? { category: textField(body.category, "category", 100) } :
       create ? { category: "Diagnostic services" } : {}),
     ...(body.description !== undefined ? { description: optionalField(body.description, (value) => textField(value, "description", 500)) } :
