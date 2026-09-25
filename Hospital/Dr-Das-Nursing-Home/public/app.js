@@ -19,6 +19,7 @@ if (menuToggle && mainNav) {
 }
 
 function setMessage(text = "") { message.textContent = text; }
+function escapeHtml(value) { return String(value ?? "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[character])); }
 function tomorrow() { const date = new Date(); date.setDate(date.getDate() + 1); return date.toISOString().slice(0, 10); }
 function formatTime(value) { return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(value)); }
 
@@ -43,6 +44,13 @@ function renderDepartments(departments) {
   list.innerHTML = departments.length
     ? departments.map((department) => `<article class="service-card"><span class="service-icon">+</span><h3>${department.name}</h3><p>Hospital department information is available through the care team.</p><a class="text-button" href="#book">Book an appointment <span aria-hidden="true">&#8594;</span></a></article>`).join("")
     : '<p class="empty-state">Services and departments are being updated. Please check back soon.</p>';
+}
+
+function renderDiagnostics(services) {
+  const list = $("#diagnostic-list");
+  list.innerHTML = services.length
+    ? services.map((service) => `<article class="service-card diagnostic-card"><p class="diagnostic-category">${escapeHtml(service.category)}</p><h3>${escapeHtml(service.name)}</h3>${service.description ? `<p>${escapeHtml(service.description)}</p>` : ""}<strong class="diagnostic-price">${service.price === null ? "Contact the centre" : `₹${Number(service.price).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}${service.priceNote ? ` ${escapeHtml(service.priceNote)}` : ""}`}</strong></article>`).join("")
+    : '<p class="empty-state">Diagnostic and laboratory services will be listed here soon.</p>';
 }
 
 async function loadAvailability() {
@@ -82,8 +90,8 @@ $("#booking-form").addEventListener("submit", async (event) => {
 
 (async function init() {
   try {
-    const [hospital, doctors, departments] = await Promise.all([getJson("/api/public/hospital"), getJson("/api/public/doctors"), getJson("/api/public/departments")]);
+    const [hospital, doctors, departments, diagnostics] = await Promise.all([getJson("/api/public/hospital"), getJson("/api/public/doctors"), getJson("/api/public/departments"), getJson("/api/public/diagnostics")]);
     $("#hospital-name").textContent = hospital.displayName; $("#footer-name").textContent = hospital.displayName;
-    state.doctors = doctors; renderDepartments(departments); renderDoctors();
+    state.doctors = doctors; renderDepartments(departments); renderDiagnostics(diagnostics); renderDoctors();
   } catch (error) { $("#doctor-list").innerHTML = `<p class="loading">${error.message}</p>`; $("#doctor-hint").textContent = "Doctors are temporarily unavailable."; }
 })();
