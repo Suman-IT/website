@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createStaffRouter = createStaffRouter;
 const express_1 = __importDefault(require("express"));
+const input_js_1 = require("../http/input.js");
 const routes_js_1 = require("../modules/admin/routes.js");
 function cookieName(configuration) {
     return configuration.nodeEnv === "production" ? "__Host-skdora_session" : "skdora_session";
@@ -139,10 +140,10 @@ function createStaffRouter(configuration, security, hospital, departments, docto
     }
     if (configuration.features.core.appointments) {
         router.get("/appointments", requirePrincipal, requirePermission("appointment.read"), async (request, response) => {
-            const date = dateField(request.query.date, "date");
-            const doctorId = request.query.doctorId === undefined ? null : idField(request.query.doctorId, "doctorId");
-            const status = request.query.status === undefined ? null : textField(request.query.status, "status", 32);
-            const search = request.query.search === undefined ? null : textField(request.query.search, "search", 150);
+            const date = (0, input_js_1.dateField)(request.query.date, "date");
+            const doctorId = request.query.doctorId === undefined ? null : (0, input_js_1.idField)(request.query.doctorId, "doctorId");
+            const status = request.query.status === undefined ? null : (0, input_js_1.textField)(request.query.status, "status", 32);
+            const search = request.query.search === undefined ? null : (0, input_js_1.textField)(request.query.search, "search", 150);
             response.json(await appointments.listQueue(principalFrom(response), { date, doctorId, status, search }));
         });
         router.post("/appointments/phone", requireOrigin, requirePrincipal, async (request, response) => {
