@@ -1,0 +1,86 @@
+product:
+  name: SKDORA Healthcare Platform
+  deploymentMode: demo_website
+  version: "0.1"
+
+core:
+  hospital: true
+
+  authentication: true
+  authorization: true
+  audit: true
+
+  doctors: true
+  departments: true
+  schedules: true
+
+  patients: true
+  appointments: true
+  reception: true
+
+website:
+  enabled: true
+
+  pages:
+    home: true
+    about: true
+    doctors: true
+    departments: true
+    services: true
+    diagnostics: true
+    facilities: true
+    contact: true
+
+  doctorProfiles: true
+  consultationInformation: true
+
+  emergencyContact: true
+  googleMaps: true
+  whatsappContact: true
+  enquiryForm: true
+  gallery: true
+  testimonials: true
+  seo: true
+
+diagnostics:
+  directory: true
+  pricing: true
+  booking: false
+
+optional:
+  patientPortal: false
+
+  notifications:
+    email: false
+    sms: false
+    whatsapp: false
+
+  payments: false
+
+  queue:
+    display: false
+    patientLiveStatus: false
+
+  reports: false
+
+  pharmacy: false
+
+  clinical:
+    records: false
+    prescriptions: false
+
+  integrations:
+    abha: false
+
+  organization:
+    multiBranch: false
+
+operations:
+  hospitalTimezone: Asia/Kolkata
+
+  backup:
+    enabled: true
+
+  portability:
+    providerNeutral: true
+    dataExport: true

@@ -1,0 +1,3 @@
+# Customer-specific configuration. Keep the platform name in FEATURES.yaml.
+hospital:
+  displayName: "Dr. Das' Nursing Home & Diagnostic center Pvt.Ltd."

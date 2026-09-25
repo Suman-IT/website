@@ -1,0 +1,14 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+.git
+.agents
+docs
+skills
+README.md
+AI_CONTEXT.md
+BUILD_STATE.md
+
+.tools/

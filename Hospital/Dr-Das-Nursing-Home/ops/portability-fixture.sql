@@ -1,0 +1,14 @@
+INSERT INTO organizations (id,name) VALUES (1,'Recovery rehearsal organization');
+INSERT INTO hospitals (id,organization_id,display_name,timezone) VALUES (1,1,'Recovery Rehearsal Hospital','Asia/Kolkata');
+INSERT INTO users (id,hospital_id,email,display_name,password_hash) VALUES (1,1,'recovery@example.invalid','Recovery Operator','$2b$12$00000000000000000000000000000000000000000000000000000');
+INSERT INTO roles (id,hospital_id,code,label) VALUES (1,1,'admin','Administrator');
+INSERT INTO user_roles (hospital_id,user_id,role_id) VALUES (1,1,1);
+INSERT INTO role_permissions (hospital_id,role_id,permission_code) SELECT 1,1,code FROM permissions;
+INSERT INTO departments (id,hospital_id,name,slug,is_published) VALUES (1,1,'General Medicine','general-medicine',TRUE);
+INSERT INTO doctors (id,hospital_id,display_name,slug,is_active,is_published) VALUES (1,1,'Dr. Recovery','dr-recovery',TRUE,TRUE);
+INSERT INTO doctor_departments (hospital_id,doctor_id,department_id) VALUES (1,1,1);
+INSERT INTO doctor_schedules (id,hospital_id,doctor_id,day_of_week,start_local,end_local,booking_mode,capacity,slot_minutes,valid_from,is_active) VALUES (1,1,1,1,'09:00:00','12:00:00','SERIAL',20,10,'2029-01-01',TRUE);
+INSERT INTO patients (id,hospital_id,full_name,mobile_normalized) VALUES (1,1,'Recovery Test Patient','+919999999999');
+INSERT INTO appointment_sessions (id,hospital_id,schedule_id,doctor_id,service_date,starts_at_utc,ends_at_utc,booking_mode,capacity,slot_minutes) VALUES (1,1,1,1,'2030-01-07','2030-01-07 03:30:00','2030-01-07 06:30:00','SERIAL',20,10);
+INSERT INTO appointments (id,session_id,hospital_id,doctor_id,patient_id,public_reference,booking_source,serial_number,estimated_start_at_utc,created_by_user_id) VALUES (1,1,1,1,1,'RECOVERY-SENTINEL-00000001','PHONE',1,'2030-01-07 03:30:00',1);
+INSERT INTO audit_events (hospital_id,actor_user_id,action_code,entity_type,entity_id) VALUES (1,1,'recovery.fixture','appointment',1);

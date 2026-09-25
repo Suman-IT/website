@@ -1,0 +1,27 @@
+services:
+  tests:
+    build:
+      context: .
+      target: test
+    environment:
+      MYSQL_TEST_HOST: test-db
+      MYSQL_TEST_PORT: 3306
+      MYSQL_TEST_USER: root
+      MYSQL_TEST_PASSWORD: ${MYSQL_TEST_PASSWORD:?Set a temporary MYSQL_TEST_PASSWORD}
+      MYSQL_TEST_ALLOW_CREATE_DATABASE: "yes"
+    depends_on:
+      test-db:
+        condition: service_healthy
+  test-db:
+    image: mysql:8.4.11
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_TEST_PASSWORD:?Set a temporary MYSQL_TEST_PASSWORD}
+      MYSQL_ROOT_HOST: "%"
+    command: ["--default-time-zone=+00:00"]
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost --silent"]
+      interval: 2s
+      timeout: 5s
+      retries: 60
