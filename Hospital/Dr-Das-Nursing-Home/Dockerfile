@@ -1,4 +1,4 @@
-FROM node:24.21.0-bookworm-slim AS build
+FROM node:24.6.0-bookworm-slim AS build
 WORKDIR /app
 COPY package*.json tsconfig.json ./
 RUN npm ci --ignore-scripts
@@ -11,7 +11,7 @@ COPY FEATURES.yaml HOSPITAL_CONFIG.yaml ./
 COPY tests ./tests
 CMD ["npm", "run", "test:integration"]
 
-FROM node:24.21.0-bookworm-slim AS runtime
+FROM node:24.6.0-bookworm-slim AS runtime
 ENV NODE_ENV=production PORT=3000
 WORKDIR /app
 COPY package*.json ./
