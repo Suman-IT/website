@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
+import type { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { loadConfiguration } from "../config/config.js";
 import { hashPassword } from "../security/password.js";
 import { createDatabasePool, verifySecuritySchema } from "./pool.js";
@@ -8,6 +8,46 @@ function required(name: string): string {
   const value = process.env[name];
   if (!value?.trim()) throw new Error(`${name} is required for bootstrap`);
   return value;
+}
+
+async function seedDemoCatalog(connection: PoolConnection, hospitalId: number): Promise<void> {
+  const departments: Array<[string, string]> = [
+    ["Gynaecology", "gynaecology"], ["Paediatrics", "paediatrics"], ["Dermatology", "dermatology"],
+    ["Neurology & Neurosurgery", "neurology-neurosurgery"],
+    ["General & Laparoscopic Surgery", "general-laparoscopic-surgery"],
+    ["Diagnostics & Laboratory", "diagnostics-laboratory"],
+  ];
+  for (const [name, slug] of departments) {
+    await connection.execute("INSERT IGNORE INTO departments (hospital_id, name, slug, is_published) VALUES (?, ?, ?, TRUE)", [hospitalId, name, slug]);
+  }
+  const doctors: Array<[string, string, string, string]> = [
+    ["Dr. Sudip Chandra Saha", "dr-sudip-chandra-saha", "Gynaecologist", "MBBS, DGO, MD (Cal.)"],
+    ["Dr. Chandan Shamsul", "dr-chandan-shamsul", "Gynaecologist", "MBBS (Cal.), DNB (Pondicherry), MNAMS"],
+    ["Dr. Anuradha Malik", "dr-anuradha-malik", "Gynaecologist", "MBBS (Gold Medalist), MS (Obst. & Gynae.), FMAS, Diploma in Laparoscopy (Germany)"],
+    ["Dr. Sanjay Kumar Patra", "dr-sanjay-kumar-patra", "Gynaecologist", "MBBS (Cal.), MS (Obst. & Gynae.)"],
+    ["Dr. Sudip Bhattacharya", "dr-sudip-bhattacharya", "Gynaecologist", "MBBS (Cal.), DNB, DGO"],
+    ["Dr. Shweta Ghosh", "dr-shweta-ghosh", "Gynaecologist", "MBBS, MS (Obst. & Gynae.)"],
+    ["Dr. Sudipa Mondal", "dr-sudipa-mondal", "Gynaecologist", "MBBS, MS (Obst. & Gynae.)"],
+    ["Dr. Chinmoy Haldar", "dr-chinmoy-haldar", "Dermatologist", "MBBS, MD (Derma) (Cal.)"],
+    ["Dr. Tathagata Dutta", "dr-tathagata-dutta", "Neurologist / Neurosurgeon", "MBBS, DNB (General Surgery), MRCS Glasgow (United Kingdom)"],
+    ["Dr. Pronendu Pal", "dr-pronendu-pal", "General & Laparoscopic Surgeon", "MBBS, MS (General Surgery), FMAS"],
+  ];
+  for (const [displayName, slug, specialty, qualifications] of doctors) {
+    await connection.execute(`INSERT IGNORE INTO doctors (hospital_id, display_name, slug, specialty, qualifications, is_active, is_published) VALUES (?, ?, ?, ?, ?, TRUE, TRUE)`, [hospitalId, displayName, slug, specialty, qualifications]);
+  }
+  const links: Record<string, string[]> = {
+    gynaecology: ["dr-sudip-chandra-saha", "dr-chandan-shamsul", "dr-anuradha-malik", "dr-sanjay-kumar-patra", "dr-sudip-bhattacharya", "dr-shweta-ghosh", "dr-sudipa-mondal"],
+    dermatology: ["dr-chinmoy-haldar"], "neurology-neurosurgery": ["dr-tathagata-dutta"], "general-laparoscopic-surgery": ["dr-pronendu-pal"],
+  };
+  for (const [departmentSlug, doctorSlugs] of Object.entries(links)) {
+    const [departmentRows] = await connection.execute<RowDataPacket[]>("SELECT id FROM departments WHERE hospital_id = ? AND slug = ?", [hospitalId, departmentSlug]);
+    for (const doctorSlug of doctorSlugs) {
+      const [doctorRows] = await connection.execute<RowDataPacket[]>("SELECT id FROM doctors WHERE hospital_id = ? AND slug = ?", [hospitalId, doctorSlug]);
+      if (departmentRows[0] && doctorRows[0]) await connection.execute("INSERT IGNORE INTO doctor_departments (hospital_id, doctor_id, department_id) VALUES (?, ?, ?)", [hospitalId, doctorRows[0].id, departmentRows[0].id]);
+    }
+  }
+  const diagnostics: Array<[string, string, string, string]> = [["ECG", "ecg", "Cardiology diagnostics", "Electrocardiogram test."], ["USG / Ultrasound", "usg-ultrasound", "Imaging", "Ultrasonography services."], ["CT Scan", "ct-scan", "Imaging", "Computed tomography imaging."], ["MRI", "mri", "Imaging", "Magnetic resonance imaging."], ["Blood Tests", "blood-tests", "Laboratory", "Routine and diagnostic blood investigations."]];
+  for (const [name, slug, category, description] of diagnostics) await connection.execute(`INSERT IGNORE INTO diagnostic_services (hospital_id, name, slug, category, description, price_note, is_published) VALUES (?, ?, ?, ?, ?, 'Contact the centre', TRUE)`, [hospitalId, name, slug, category, description]);
 }
 
 async function bootstrap(): Promise<void> {
@@ -66,6 +106,7 @@ async function bootstrap(): Promise<void> {
          VALUES (?, ?, 'security.bootstrap', 'hospital', ?)`,
         [hospital.insertId, user.insertId, hospital.insertId],
       );
+      await seedDemoCatalog(connection, hospital.insertId);
       await connection.commit();
       console.info("Initial hospital and administrator created");
     } catch (error) {

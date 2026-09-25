@@ -8,6 +8,7 @@ import { DepartmentService, type DepartmentInput } from "../departments/departme
 import { DoctorService, type DoctorInput } from "../doctors/doctors.service.js";
 import { HospitalService } from "../hospital/hospital.service.js";
 import { ScheduleService, type OverrideInput, type ScheduleInput } from "../schedules/schedules.service.js";
+import { DiagnosticsService, type DiagnosticInput } from "../diagnostics/diagnostics.service.js";
 
 function principal(response: Response): Principal { return response.locals.principal as Principal; }
 
@@ -23,7 +24,7 @@ function departmentFields(raw: unknown, create: boolean): Partial<DepartmentInpu
 
 function doctorFields(raw: unknown, create: boolean) {
   const body = bodyObject(raw,
-    ["displayName", "slug", "isActive", "isPublished", ...(create ? ["departmentIds"] : [])],
+    ["displayName", "slug", "specialty", "qualifications", "isActive", "isPublished", ...(create ? ["departmentIds"] : [])],
     create ? ["displayName", "slug"] : []);
   const fields: Partial<DoctorInput> = {
     ...(body.displayName !== undefined ? { displayName: textField(body.displayName, "displayName") } : {}),
@@ -73,9 +74,35 @@ function overrideFields(raw: unknown): OverrideInput {
   };
 }
 
+function diagnosticFields(raw: unknown, create: boolean): Partial<DiagnosticInput> {
+  const body = bodyObject(raw,
+    ["name", "slug", "category", "description", "price", "priceNote", "isPublished"],
+    create ? ["name", "slug"] : []);
+  const price = body.price === undefined || body.price === null || body.price === "" ? null :
+    typeof body.price === "number" && Number.isFinite(body.price) && body.price >= 0 ? body.price : NaN;
+  if (Number.isNaN(price)) throw new HttpError(400, "price must be a non-negative number");
+  return {
+    ...(body.name !== undefined ? { name: textField(body.name, "name", 180) } : {}),
+    ...(body.slug !== undefined ? { slug: slugField(body.slug) } : {}),
+    ...(body.specialty !== undefined ? { specialty: optionalField(body.specialty, (value) => textField(value, "specialty", 150)) } :
+      create ? { specialty: null } : {}),
+    ...(body.qualifications !== undefined ? { qualifications: optionalField(body.qualifications, (value) => textField(value, "qualifications", 255)) } :
+      create ? { qualifications: null } : {}),
+    ...(body.category !== undefined ? { category: textField(body.category, "category", 100) } :
+      create ? { category: "Diagnostic services" } : {}),
+    ...(body.description !== undefined ? { description: optionalField(body.description, (value) => textField(value, "description", 500)) } :
+      create ? { description: null } : {}),
+    ...(body.price !== undefined ? { price } : create ? { price: null } : {}),
+    ...(body.priceNote !== undefined ? { priceNote: optionalField(body.priceNote, (value) => textField(value, "priceNote", 120)) } :
+      create ? { priceNote: null } : {}),
+    ...(body.isPublished !== undefined ? { isPublished: boolField(body.isPublished, "isPublished") } :
+      create ? { isPublished: false } : {}),
+  };
+}
+
 export function createAdminRouter(configuration: AppConfiguration, security: SecurityService,
   hospital: HospitalService, departments: DepartmentService, doctors: DoctorService,
-  schedules: ScheduleService) {
+  schedules: ScheduleService, diagnostics: DiagnosticsService) {
   const router = express.Router();
   router.use((request, response, next) => {
     if (!["GET", "HEAD", "OPTIONS"].includes(request.method) &&
@@ -164,6 +191,23 @@ export function createAdminRouter(configuration: AppConfiguration, security: Sec
     router.delete("/schedules/:id/overrides/:date", permit("schedule.manage"), async (request, response) => {
       await schedules.deleteOverride(principal(response), idField(String(request.params.id)),
         dateField(String(request.params.date)));
+      response.status(204).end();
+    });
+  }
+  if (configuration.features.diagnostics.directory) {
+    router.get("/diagnostics", permit("diagnostic.read"), async (_request, response) => {
+      response.json(await diagnostics.list(principal(response).hospitalId));
+    });
+    router.post("/diagnostics", permit("diagnostic.manage"), async (request, response) => {
+      response.status(201).json(await diagnostics.create(principal(response),
+        diagnosticFields(request.body, true) as DiagnosticInput));
+    });
+    router.patch("/diagnostics/:id", permit("diagnostic.manage"), async (request, response) => {
+      response.json(await diagnostics.update(principal(response), idField(String(request.params.id)),
+        diagnosticFields(request.body, false)));
+    });
+    router.delete("/diagnostics/:id", permit("diagnostic.manage"), async (request, response) => {
+      await diagnostics.remove(principal(response), idField(String(request.params.id)));
       response.status(204).end();
     });
   }

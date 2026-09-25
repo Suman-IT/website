@@ -9,6 +9,7 @@ import { HospitalService } from "./modules/hospital/hospital.service.js";
 import { ScheduleService } from "./modules/schedules/schedules.service.js";
 import { PatientService } from "./modules/patients/patients.service.js";
 import { AppointmentService } from "./modules/appointments/appointments.service.js";
+import { DiagnosticsService } from "./modules/diagnostics/diagnostics.service.js";
 import { createStaffRouter } from "./security/routes.js";
 import { SecurityService } from "./security/security.service.js";
 
@@ -21,6 +22,7 @@ export function createApp(configuration: AppConfiguration, pool: Pool) {
   const doctors = new DoctorService(pool);
   const schedules = new ScheduleService(pool);
   const appointments = new AppointmentService(pool, configuration.features.core.appointments);
+  const diagnostics = new DiagnosticsService(pool);
 
   app.use((_request, response, next) => {
     response.setHeader("X-Content-Type-Options", "nosniff");
@@ -61,6 +63,13 @@ export function createApp(configuration: AppConfiguration, pool: Pool) {
       response.status(201).json(await appointments.createPublic(identity.id, request.body, key));
     });
   }
+  if (configuration.features.website.enabled && configuration.features.website.pages.diagnostics &&
+      configuration.features.diagnostics.directory) {
+    app.get("/api/public/diagnostics", async (_request, response) => {
+      const identity = await hospital.getActiveHospital();
+      response.json(await diagnostics.listPublic(identity.id));
+    });
+  }
   if (configuration.features.website.enabled && configuration.features.core.schedules) {
     app.get("/api/public/doctors/:slug/availability", async (request, response) => {
       const identity = await hospital.getActiveHospital();
@@ -72,7 +81,7 @@ export function createApp(configuration: AppConfiguration, pool: Pool) {
 
   app.use("/api/staff", createStaffRouter(configuration, new SecurityService(pool),
     hospital, departments, doctors, schedules,
-    new PatientService(pool, configuration.features.core.patients),
+    new PatientService(pool, configuration.features.core.patients), diagnostics,
     appointments));
 
   app.use((error: unknown, _request: express.Request, response: express.Response,

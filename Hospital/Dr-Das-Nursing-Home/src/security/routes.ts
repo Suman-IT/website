@@ -8,6 +8,7 @@ import { HospitalService } from "../modules/hospital/hospital.service.js";
 import { ScheduleService } from "../modules/schedules/schedules.service.js";
 import { PatientService } from "../modules/patients/patients.service.js";
 import { AppointmentService } from "../modules/appointments/appointments.service.js";
+import { DiagnosticsService } from "../modules/diagnostics/diagnostics.service.js";
 import type { Principal } from "./security.service.js";
 import { SecurityService } from "./security.service.js";
 
@@ -39,7 +40,8 @@ function principalFrom(response: Response): Principal {
 
 export function createStaffRouter(configuration: AppConfiguration, security: SecurityService,
   hospital: HospitalService, departments: DepartmentService, doctors: DoctorService,
-  schedules: ScheduleService, patients: PatientService, appointments: AppointmentService) {
+  schedules: ScheduleService, patients: PatientService, diagnostics: DiagnosticsService,
+  appointments: AppointmentService) {
   const router = express.Router();
   let activePasswordChecks = 0;
 
@@ -140,7 +142,7 @@ export function createStaffRouter(configuration: AppConfiguration, security: Sec
     });
 
   router.use("/admin", requirePrincipal,
-    createAdminRouter(configuration, security, hospital, departments, doctors, schedules));
+    createAdminRouter(configuration, security, hospital, departments, doctors, schedules, diagnostics));
 
   if (configuration.features.core.patients) {
     router.post("/patients/search", requireOrigin, requirePrincipal, async (request, response) => {
