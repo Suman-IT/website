@@ -9,7 +9,7 @@ A lightweight, responsive HTML/CSS/JavaScript website template for Hostinger.
 3. Update the Google Maps URL and embed URL in the same file.
 4. Replace demo reviews and photo placeholders only with approved content.
 
-The appointment form is intentionally front-end only. Connect it to an approved email/form backend before launch; it does not confirm appointments.
+This is an informational website only. It presents services, doctors, diagnostics, reviews, contact details, social links, location and a visitor sitemap. It has no appointment form, online booking, patient data collection, backend or staff dashboard. Visitors contact the hospital directly by phone or WhatsApp.
 
 ## Preview locally
 

@@ -21,7 +21,7 @@ window.hospitalData = {
   googleReviewsUrl: "https://www.google.com/maps",
   aboutText: "Dr. Das Nursing Home is presented here as a welcoming local healthcare destination. Use this editable introduction to describe the nursing home's approach, neighbourhood, and verified areas of care once the owner approves the content.",
   stats: ["XX+ Years", "XX Doctors", "XX Beds", "XX+ Patients"],
-  socialLinks: { facebook: "#", instagram: "#", youtube: "#" },
+  socialLinks: { facebook: "https://www.facebook.com/", instagram: "https://www.instagram.com/", youtube: "#" },
   trustItems: [
     { icon: "01", title: "Family-first care", note: "Demo value" },
     { icon: "02", title: "Experienced doctors", note: "Details to verify" },

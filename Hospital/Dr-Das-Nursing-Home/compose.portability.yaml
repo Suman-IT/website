@@ -1,0 +1,53 @@
+services:
+  source-db:
+    image: mysql:8.4.11
+    environment:
+      MYSQL_DATABASE: skdora_source
+      MYSQL_ROOT_PASSWORD: source-root
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -psource-root --silent"]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+  target-db:
+    image: mysql:8.4.11
+    environment:
+      MYSQL_DATABASE: skdora_target
+      MYSQL_ROOT_PASSWORD: target-root
+    ports:
+      - "127.0.0.1:13306:3306"
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -ptarget-root --silent"]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+  source-migrate:
+    image: mysql:8.4.11
+    depends_on:
+      source-db:
+        condition: service_healthy
+    volumes:
+      - ./db/migrations:/migrations:ro
+      - ./ops/portability-fixture.sql:/fixture.sql:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["for file in /migrations/*.sql; do mysql -h source-db -uroot -psource-root skdora_source < \"$$file\"; done && mysql -h source-db -uroot -psource-root skdora_source < /fixture.sql"]
+  target-app:
+    build: .
+    environment:
+      NODE_ENV: test
+      PORT: 3000
+      APP_ORIGIN: http://localhost:13100
+      DB_HOST: target-db
+      DB_PORT: 3306
+      DB_NAME: skdora_target
+      DB_USER: root
+      DB_PASSWORD: target-root
+    ports:
+      - "127.0.0.1:13100:3000"
+    depends_on:
+      target-db:
+        condition: service_healthy

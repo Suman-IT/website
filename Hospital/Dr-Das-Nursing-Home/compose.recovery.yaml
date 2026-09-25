@@ -1,0 +1,27 @@
+services:
+  source-db:
+    image: mysql:8.4.11
+    environment:
+      MYSQL_DATABASE: recovery_source
+      MYSQL_ROOT_PASSWORD: recovery-source-root
+    volumes:
+      - ./ops/recovery-fixture.sql:/docker-entrypoint-initdb.d/001_fixture.sql:ro
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -urecovery -precovery-source --silent"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  restore-db:
+    image: mysql:8.4.11
+    environment:
+      MYSQL_DATABASE: recovery_source
+      MYSQL_ROOT_PASSWORD: recovery-restore-root
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -precovery-restore-root --silent"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
